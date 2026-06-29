@@ -25,6 +25,7 @@ EPAS_FW_RATE_MARGIN  = 0.94
 PANDA_STEP_MARGIN = 0.9
 
 MIN_TORQUE_FRAMES = 50
+TORQUE_HANDOFF_MIN_SPEED = 0.01
 UNWIND_HANDOFF_DEG = 15.0   # stay in torque until |target - actual| < this when unwinding
 UNWIND_HANDOFF_RATE = 40.0  # don't hand off torque->angle while the wheel is slewing faster (deg/s)
 
@@ -153,7 +154,8 @@ class ExternalController:
       self.torque_active = True
 
     # exit torque only when wheel is settled; on unwind also wait for the gap to shrink first
-    elif self.torque_active and self.torque_active_frames >= MIN_TORQUE_FRAMES and not self.hands_on and epas_ready:
+    elif (self.torque_active and self.torque_active_frames >= MIN_TORQUE_FRAMES and not self.hands_on and epas_ready and
+          not CS.out.standstill and CS.out.vEgoRaw > TORQUE_HANDOFF_MIN_SPEED):
       fw_max = float(np.interp(CS.out.vEgoRaw, EPAS_FW_MAX_ANGLE_BP, EPAS_FW_MAX_ANGLE_V)) * EPAS_FW_ANGLE_MARGIN
       in_envelope = abs(CS.out.steeringAngleDeg) < fw_max
       # hand back to angle only once the wheel's recent motion fits the EPAS 0.16s rate budget
